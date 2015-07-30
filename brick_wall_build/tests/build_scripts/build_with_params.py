@@ -6,6 +6,7 @@ tasks_run = []
     
 @task()
 def clean(input_artifacts, output_artifact,directory='/tmp'):
+    print "qq"
     tasks_run.append('clean[%s]' % directory)
 
     

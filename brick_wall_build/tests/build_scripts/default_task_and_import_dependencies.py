@@ -12,7 +12,7 @@ def local_task(input_artifacts, output_artifact):
     tasks_run.append('local_task')
     
 
-@task(clean, build_with_params.html, local_task)
+@task(build_with_params.clean, build_with_params.html, local_task)
 def task_with_imported_dependencies(input_artifacts, output_artifact):
     tasks_run.append('task_with_imported_dependencies')
 
