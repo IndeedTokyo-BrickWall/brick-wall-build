@@ -11,6 +11,7 @@ setup(
     license="MIT License",
     description="Lightweight Python Build Tool.",
     long_description="A hack of Pynt for https://github.com/IndeedTokyo-BrickWall/BrickWall project",
+    install_requires=['cuisine'],
     classifiers=[
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Developers',

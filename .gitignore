@@ -8,3 +8,4 @@ build
 .ropeproject
 *.out
 brick_wall_build.egg-info
+datasets

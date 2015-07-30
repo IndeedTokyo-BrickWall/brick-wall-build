@@ -215,11 +215,7 @@ class TestMultipleTasks:
     def setup_method(self,method):
         from .build_scripts import build_with_params
         self._mod = build_with_params
-
-    def test_dependency_is_run_only_once_unless_explicitly_invoked_again(self):
-        mod = build(self._mod, ["clean", "html", 'tests', "clean"])
-        assert ['clean[/tmp]', "html", "tests[]", "clean[/tmp]"] == mod.tasks_run
-        
+  
     def test_multiple_partial_names(self):
         assert ['clean[/tmp]', "html"] == build(self._mod, ["cl", "htm"]).tasks_run
 
@@ -254,7 +250,7 @@ class TesttaskArguments:
     def test_passing_keyword_args(self):
         mod = build(self._mod, ['co[to=bar,from_=foo]','star[80,debug=False]', 'echo[foo=bar,blah=123]'])
 
-        assert ['clean[/tmp]','copy_file[foo,bar,True]',
+        assert ['copy_file[foo,bar,True]',
                 'start_server[80,False]',
                 'echo[blah=123,foo=bar]'] == mod.tasks_run
 
@@ -285,7 +281,7 @@ class TesttaskArguments:
         with pytest.raises(TypeError) as exc: 
              build(self._mod, ['append[1,2,3]'])
         print(str(exc.value))
-        assert re.findall('takes .*2 .*arguments', str(exc.value))
+        assert re.findall('takes .*4 .*arguments', str(exc.value))
 
              
     def test_invalid_names_for_kwargs(self):

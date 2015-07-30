@@ -12,12 +12,36 @@ import re
 import imp
 import sys
 import dis
+import cuisine
+import fabric.api
 from brick_wall_build import __version__
 
 _CREDIT_LINE = "Powered by brick_wall_build %s - A Lightweight Python Build Tool." % __version__
 _LOGGING_FORMAT = "[ %(name)s - %(message)s ]"
 _TASK_PATTERN = re.compile("^([^\[]+)(\[([^\]]*)\])?$")
 #"^([^\[]+)(\[([^\],=]*(,[^\],=]+)*(,[^\],=]+=[^\],=]+)*)\])?$"
+
+def set_artifact_path(path):
+    fabric.api.env['artifact_path'] = path
+
+def set_tmp_path(path):
+    fabric.api.env['tmp_path'] = path
+
+def artifact_path():
+    return fabric.api.env['artifact_path']
+
+def tmp_path():
+    return fabric.api.env['tmp_path']
+
+def artifact_dir(name):
+    return artifact_path() + "/" + name
+
+def tmp_file(name):
+    return tmp_path() + name
+
+def artifact_file(name, cs):
+    return tmp_path() + name + cs
+
 def build(args):
     """
     Build the specified module with specified arguments.
@@ -35,7 +59,7 @@ def build(args):
     #    exit
     # Parse arguments.
     args = parser.parse_args(args)
-
+    cuisine.mode_local()
     if args.version:
         print('brick_wall_build %s' % __version__)
         sys.exit(0)
@@ -46,6 +70,8 @@ def build(args):
         parser.print_help()
         sys.exit(1)
 
+    set_tmp_path("/tmp")
+    artifact_dir("./datasets")
     module = imp.load_source(path.splitext(path.basename(args.file))[0], args.file)
     
     # Run task and all its dependencies.

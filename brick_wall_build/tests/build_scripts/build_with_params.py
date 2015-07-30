@@ -5,40 +5,40 @@ from brick_wall_build import task
 tasks_run = []
     
 @task()
-def clean(directory='/tmp'):
+def clean(input_artifacts, output_artifact,directory='/tmp'):
     tasks_run.append('clean[%s]' % directory)
 
     
 @task(clean)
-def html():
+def html(input_artifacts, output_artifact):
     tasks_run.append('html')
 
 
 @task()
-def tests(*test_names):
+def tests(input_artifacts, output_artifact, *test_names):
     tasks_run.append('tests[%s]' % ','.join(test_names))
 
 
 @task(clean)
-def copy_file(from_, to, fail_on_error='True'):
+def copy_file(input_artifacts, output_artifact, from_, to, fail_on_error='True'):
     tasks_run.append('copy_file[%s,%s,%s]' % (from_, to, fail_on_error))
 
 
 @task(clean)
-def start_server(port='80', debug='True'):
+def start_server(input_artifacts, output_artifact, port='80', debug='True'):
     tasks_run.append('start_server[%s,%s]' % (port, debug))
 
 @task(ignore=True)
-def ignored(file, contents):
+def ignored(input_artifacts, output_artifact, file, contents):
     tasks_run.append('append_to_file[%s,%s]' % (file, contents))
 
 @task(clean, ignored)
-def append_to_file(file, contents):
+def append_to_file(input_artifacts, output_artifact, file, contents):
     tasks_run.append('append_to_file[%s,%s]' % (file, contents))
 
     
 @task(ignored)
-def echo(*args,**kwargs):
+def echo(input_artifacts, output_artifact, *args,**kwargs):
     args_str = []
     if args:
         args_str.append(','.join(args))
