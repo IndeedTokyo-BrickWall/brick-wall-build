@@ -1,6 +1,6 @@
 import pytest
 import re
-from brick_wall_build import _brick_wall_build, main
+from brick_wall_build import _brick_wall_build, main, set_tmp_path, set_artifact_path
 import sys
 if sys.version.startswith("3."):
     from io import StringIO as SOut
@@ -10,6 +10,13 @@ else:
 import os
 from os import path
 import imp
+import cuisine
+cuisine.mode_local()
+cuisine.dir_remove('datasets')
+cuisine.dir_ensure('datasets')
+set_tmp_path("/tmp")
+set_artifact_path("./datasets")
+
 
 def fpath(mod):
     return path.splitext(mod.__file__)[0] + '.py'
@@ -30,17 +37,22 @@ def build(mod, params=None, init_mod = reset_build_file):
     return dynamically_loaded_mod
 
 class TestParseArgs:
+
     def test_parsing_commandline(self):
+        cuisine.dir_remove('datasets')
+
         args = _brick_wall_build._create_parser().parse_args(['-f', "foo.py", "task1", "task2"])
         assert "foo.py" == args.file
         assert not args.list_tasks
         assert ['task1', 'task2'] == args.tasks
 
     def test_parsing_commandline_help(self):
+        cuisine.dir_remove('datasets')
         assert _brick_wall_build._create_parser().parse_args(["-l"]).list_tasks
         assert _brick_wall_build._create_parser().parse_args([ "--list-tasks"]).list_tasks
 
     def test_parsing_commandline_build_file(self):
+        cuisine.dir_remove('datasets')
         assert "some_file" == _brick_wall_build._create_parser().parse_args(["-f", "some_file"]).file
         assert "build.py" == _brick_wall_build._create_parser().parse_args([]).file
         assert "/foo/bar" == _brick_wall_build._create_parser().parse_args(
@@ -55,6 +67,7 @@ class TestParseArgs:
 class TestBuildSimple:
         
     def test_get_tasks(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import simple
         ts = _brick_wall_build._get_tasks(simple)
         assert len(ts) == 5
@@ -62,6 +75,7 @@ class TestBuildSimple:
 class TestBuildWithDependencies:
         
     def test_get_tasks(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import dependencies
         tasks = _brick_wall_build._get_tasks(dependencies)
         assert len(tasks) == 5
@@ -69,6 +83,7 @@ class TestBuildWithDependencies:
         assert 3 == len([task for task in tasks if task.name == 'ios'][0].dependencies)
 
     def test_dependencies_for_imported(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import default_task_and_import_dependencies
         tasks = _brick_wall_build._get_tasks(default_task_and_import_dependencies)
         assert 7 == len(tasks)
@@ -80,6 +95,7 @@ class TestBuildWithDependencies:
         
 
     def test_dependencies_that_are_imported_e2e(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import default_task_and_import_dependencies
         def mod_init(mod):
             mod.tasks_run = []
@@ -93,16 +109,19 @@ class TestBuildWithDependencies:
 class TestDecorationValidation:
 
     def test_task_without_braces(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(Exception) as exc:
             from .build_scripts import annotation_misuse_1
         assert 'Replace use of @task with @task().' in str(exc.value)
 
     def test_dependency_not_a_task(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(Exception) as exc:
             from .build_scripts import annotation_misuse_2
         assert re.findall('function html.* is not a task.', str(exc.value))
 
     def test_dependency_not_a_function(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(Exception) as exc:
             from .build_scripts import annotation_misuse_3
         assert '1234 is not a task.' in str(exc.value)
@@ -126,6 +145,7 @@ class TestOptions:
 
     @pytest.fixture
     def module(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import options as module
         self.docs = {'clean': '', 'html': 'Generate HTML.',
                      'images': '''Prepare images.\n\nShould be ignored.''',
@@ -133,10 +153,12 @@ class TestOptions:
         return module
         
     def test_ignore_tasks(self, module):
+        cuisine.dir_remove('datasets')
         module = build(module,["android"])
         assert ['clean', 'html', 'android'] == module.tasks_run
 
     def test_docs(self, module):
+        cuisine.dir_remove('datasets')
         tasks = _brick_wall_build._get_tasks(module)
         assert 4 == len(tasks)
         
@@ -146,6 +168,7 @@ class TestOptions:
 
     @pytest.mark.parametrize('args', [['-l'], ['--list-tasks'], []])
     def test_list_docs(self, module, args):
+        cuisine.dir_remove('datasets')
         with mock_stdout() as out: 
             build(module,args)
         stdout = out[0]
@@ -161,6 +184,7 @@ class TestOptions:
 class TestRuntimeError:
 
     def test_stop_on_exception(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import runtime_error as re
         with pytest.raises(IOError):
             build(re,["android"])
@@ -169,6 +193,7 @@ class TestRuntimeError:
         assert not hasattr(mod, 'ran_android')
         
     def test_exception_on_invalid_task_name(self):
+        cuisine.dir_remove('datasets')
         from .build_scripts import build_with_params
         with pytest.raises(Exception) as exc:
             build(build_with_params,["doesnt_exist"])
@@ -179,19 +204,23 @@ class TestRuntimeError:
 
 class TestPartialTaskNames:
     def setup_method(self,method):
+        cuisine.dir_remove('datasets')
         from .build_scripts import build_with_params
         self._mod = build_with_params
 
         
     def test_with_partial_name(self):
+        cuisine.dir_remove('datasets')
         mod = build(self._mod, ["cl"])
         assert ['clean[/tmp]'] ==  mod.tasks_run
         
     def test_with_partial_name_and_dependencies(self):
+        cuisine.dir_remove('datasets')
         mod = build(self._mod, ["htm"])
         assert ['clean[/tmp]','html'] ==  mod.tasks_run
 
     def test_exception_on_conflicting_partial_names(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(Exception) as exc:
             build(self._mod, ["c"])
         assert ('Conflicting matches clean, copy_file for task c' in str(exc.value) or
@@ -201,10 +230,12 @@ class TestPartialTaskNames:
 
 class TestDefaultTask:
         def test_simple_default_task(self):
+            cuisine.dir_remove('datasets')
             from .build_scripts import simple
             assert _brick_wall_build._run_default_task(simple) #returns false if no default task
 
         def test_module_with_defaults_which_imports_other_files_with_defaults(self):
+            cuisine.dir_remove('datasets')
             from .build_scripts import default_task_and_import_dependencies
             mod = build(default_task_and_import_dependencies)
             assert 'task_with_imported_dependencies' in mod.tasks_run
@@ -213,21 +244,25 @@ class TestDefaultTask:
 
 class TestMultipleTasks:
     def setup_method(self,method):
+        cuisine.dir_remove('datasets')
         from .build_scripts import build_with_params
         self._mod = build_with_params
   
     def test_multiple_partial_names(self):
+        cuisine.dir_remove('datasets')
         assert ['clean[/tmp]', "html"] == build(self._mod, ["cl", "htm"]).tasks_run
 
 
 
 class TesttaskArguments:
     def setup_method(self,method):
+        cuisine.dir_remove('datasets')
         from .build_scripts import build_with_params
         self._mod = build_with_params
         self._mod.tasks_run = []
 
     def test_passing_optional_params_with_dependencies(self):
+        cuisine.dir_remove('datasets')
         mod = build(self._mod, ["clean[~/project/foo]",
                                      'append_to_file[/foo/bar,ABCDEF]',
                                      "copy_file[/foo/bar,/foo/blah,False]",
@@ -237,17 +272,19 @@ class TesttaskArguments:
             ] == mod.tasks_run
         
     def test_invoking_varargs_task(self):
+        cuisine.dir_remove('datasets')
         mod = build(self._mod, ['tests[test1,test2,test3]'])
         assert ['tests[test1,test2,test3]'] == mod.tasks_run
 
     def test_partial_name_with_args(self):
-
+        cuisine.dir_remove('datasets')
         mod = build(self._mod, ['co[foo,bar]','star'])
         assert ['clean[/tmp]','copy_file[foo,bar,True]', 'start_server[80,True]'
             ] == mod.tasks_run
 
 
     def test_passing_keyword_args(self):
+        cuisine.dir_remove('datasets')
         mod = build(self._mod, ['co[to=bar,from_=foo]','star[80,debug=False]', 'echo[foo=bar,blah=123]'])
 
         assert ['copy_file[foo,bar,True]',
@@ -257,6 +294,7 @@ class TesttaskArguments:
 
 
     def test_passing_varargs_and_keyword_args(self):
+        cuisine.dir_remove('datasets')
         assert (['echo[1,2,3,some_str,111=333,bar=123.3,foo=xyz]']
                 ==  
                 build(self._mod,
@@ -264,6 +302,7 @@ class TesttaskArguments:
                   ).tasks_run)
 
     def test_validate_keyword_arguments_always_after_args(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(Exception) as exc:
             build(self._mod, ['echo[bar=123.3,foo]'])
         assert "Non keyword arg foo cannot follows" \
@@ -278,6 +317,7 @@ class TesttaskArguments:
 
             
     def test_invalid_number_of_args(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(TypeError) as exc: 
              build(self._mod, ['append[1,2,3]'])
         print(str(exc.value))
@@ -285,6 +325,7 @@ class TesttaskArguments:
 
              
     def test_invalid_names_for_kwargs(self):
+        cuisine.dir_remove('datasets')
         with pytest.raises(TypeError) as exc: 
             build(self._mod, ['copy[1=2,to=bar]'])
         assert "got an unexpected keyword argument '1'" in str(exc.value)

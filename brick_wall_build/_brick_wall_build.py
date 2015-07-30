@@ -8,16 +8,20 @@ import argparse
 import logging
 import os
 from os import path
+import StringIO
 import re
 import imp
 import sys
 import dis
 import cuisine
 import fabric.api
+import hashlib
+import time
+from fabric.colors import yellow, green, blue
 from brick_wall_build import __version__
 
 _CREDIT_LINE = "Powered by brick_wall_build %s - A Lightweight Python Build Tool." % __version__
-_LOGGING_FORMAT = "[ %(name)s - %(message)s ]"
+_LOGGING_FORMAT = "%(asctime)s - %(message)s "
 _TASK_PATTERN = re.compile("^([^\[]+)(\[([^\]]*)\])?$")
 #"^([^\[]+)(\[([^\],=]*(,[^\],=]+)*(,[^\],=]+=[^\],=]+)*)\])?$"
 
@@ -37,10 +41,19 @@ def artifact_dir(name):
     return artifact_path() + "/" + name
 
 def tmp_file(name):
-    return tmp_path() + name
+    return tmp_path() + "/" +  name
 
 def artifact_file(name, cs):
-    return tmp_path() + name + cs
+    return artifact_path() + "/" + name + "/" + cs
+
+def run(*args, **kwargs):
+    print("Running command: " + blue(str(args[0])))
+    start = time.clock()
+    print(green(cuisine.run(args, kwargs)))
+    end = time.clock()
+    print("Elapsed time: " + str(end -start))
+    print
+
 
 def build(args):
     """
@@ -71,9 +84,10 @@ def build(args):
         sys.exit(1)
 
     set_tmp_path("/tmp")
-    artifact_dir("./datasets")
+    set_artifact_path("./datasets")
     module = imp.load_source(path.splitext(path.basename(args.file))[0], args.file)
-    
+    cuisine.dir_ensure(tmp_path())
+    cuisine.dir_ensure(artifact_path())
     # Run task and all its dependencies.
     if args.list_tasks:
         print_tasks(module, args.file)
@@ -200,24 +214,48 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
         if task.ignored:
         
             logger.info("Ignoring task \"%s\"" % task.name)
-            
+            cs = 'IGNORE'
         else:
 
-            logger.info("Starting task \"%s\"" % task.name)
-
+            logger.info(yellow("Starting task \"%s\"" % task.name))
             try:
                 # Run task.
-                func=dis.dis(task)
-
-                task(input_artifacts, 'output-file', *(args or []), **(kwargs or {}))
+                cs = checksum(input_artifacts, task.func, task.watched_sources, args, kwargs)
+                if cuisine.dir_exists(artifact_file(task.name, cs)):
+                    logger.info("Nothing changed")
+                else:
+                    cuisine.dir_remove(artifact_dir(task.name))
+                    cuisine.dir_ensure(artifact_dir(task.name))
+                    cuisine.dir_remove(tmp_file(task.name))
+                    cuisine.dir_ensure(tmp_file(task.name))
+                    task(input_artifacts, tmp_file(task.name), *(args or []), **(kwargs or {}))
+                    cuisine.run("mv " + tmp_file(task.name) + " " + artifact_file(task.name, cs))
             except:
                 logger.critical("Error in task \"%s\"" % task.name)
                 logger.critical("Aborting build")
                 raise
             
-            logger.info("Completed task \"%s\"" % task.name)
+            logger.info("Completed task " + task.name + " artifact path: " + artifact_file(task.name, cs))
         
-        completed_tasks[task.name] = 'qq'
+        completed_tasks[task.name] = cs
+
+def checksum(input_artifacts, func, watched_sources, args, kwargs):
+    checksums = []
+    checksums.append(str(input_artifacts))
+    checksums.append(str(args))
+    checksums.append(str(kwargs))
+    stdout = sys.stdout
+    sys.stdout = StringIO.StringIO()
+    dis.dis(func)
+    checksums.append(sys.stdout.getvalue())
+    sys.stdout = stdout
+    for watched_source in watched_sources:
+        cuisine.run("git add -A " + watched_source)
+        checksums.append(cuisine.run("git ls-files -s " + watched_source))
+    cs = ",".join(checksums)
+    return hashlib.sha256(cs).hexdigest()
+
+
 
 def _create_parser():
     """
@@ -236,10 +274,6 @@ def _create_parser():
                         metavar = "file", default =  "build.py")
     
     return parser
-
-
-def artifact_file(name, checksum):
-    return name + "-" + checksum
 
         
 # Abbreviate for convenience.
@@ -272,6 +306,7 @@ class Task(object):
         self.doc = inspect.getdoc(func) or ''
         self.dependencies = dependencies
         self.ignored =  bool(options.get('ignore', False))
+        self.watched_sources = set(options.get('watched_sources', []))
         
     def __call__(self,*args,**kwargs):
         self.func.__call__(*args,**kwargs)
@@ -323,7 +358,7 @@ def _get_logger(module):
 
     # Add ch to logger
     logger.addHandler(ch)
-
+    logger.propagate = False
     return logger
 
 def main():
