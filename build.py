@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# example and test
+#
 import subprocess
 from brick_wall_build import task
 
@@ -9,4 +11,4 @@ def test(*args):
     """
     Run unit tests.
     """
-    subprocess.call(["py.test-2.7"] + list(args))
+    print("yo")
