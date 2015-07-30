@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-from pynt import task
+from brick_wall_build import task
 
-from pynt.tests.build_scripts.simple import *
-from pynt.tests.build_scripts import build_with_params
+from brick_wall_build.tests.build_scripts.simple import *
+from brick_wall_build.tests.build_scripts import build_with_params
 
 tasks_run = []
 

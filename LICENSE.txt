@@ -1,3 +1,4 @@
+Copyright (C) 2015 Artem Onuchin
 Copyright (C) 2012 Raghunandan Rao
 Copyright (C) 2012 Calum J. Eadie
 

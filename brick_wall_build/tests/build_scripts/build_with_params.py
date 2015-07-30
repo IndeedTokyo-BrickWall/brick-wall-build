@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from pynt import task
+from brick_wall_build import task
 
 tasks_run = []
     

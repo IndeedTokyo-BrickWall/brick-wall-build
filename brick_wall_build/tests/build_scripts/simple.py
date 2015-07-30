@@ -1,4 +1,6 @@
-from pynt import task
+#!/usr/bin/python
+
+from brick_wall_build import task
 
 
 @task()
@@ -7,25 +9,25 @@ def clean():
 
     print("clean")
 
-@task(clean)
+@task()
 def html():
     """Generate HTML."""
     
     print("html")
 
-@task(clean)
+@task()
 def images():
     """Prepare images."""
 
     print("images")
 
-@task(clean,html,images)
+@task()
 def android():
     """Package Android app."""
 
     print("android")
 
-@task(clean,html,images)
+@task()
 def ios():
     """Package iOS app."""
 
@@ -35,3 +37,5 @@ def some_utility_method():
     """Some utility method."""
 
     print("some utility method")
+
+__DEFAULT__ = ios

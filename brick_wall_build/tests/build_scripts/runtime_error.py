@@ -1,7 +1,7 @@
 """
 Build script with a runtime error.
 """
-from pynt import task
+from brick_wall_build import task
 
 
 @task()

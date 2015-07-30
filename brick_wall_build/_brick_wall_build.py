@@ -11,9 +11,9 @@ from os import path
 import re
 import imp
 import sys
-from pynt import __version__
+from brick_wall_build import __version__
 
-_CREDIT_LINE = "Powered by pynt %s - A Lightweight Python Build Tool." % __version__
+_CREDIT_LINE = "Powered by brick_wall_build %s - A Lightweight Python Build Tool." % __version__
 _LOGGING_FORMAT = "[ %(name)s - %(message)s ]"
 _TASK_PATTERN = re.compile("^([^\[]+)(\[([^\]]*)\])?$")
 #"^([^\[]+)(\[([^\],=]*(,[^\],=]+)*(,[^\],=]+=[^\],=]+)*)\])?$"
@@ -36,7 +36,7 @@ def build(args):
     args = parser.parse_args(args)
 
     if args.version:
-        print('pynt %s' % __version__)
+        print('brick_wall_build %s' % __version__)
         sys.exit(0)
         
     #load build file as a module
