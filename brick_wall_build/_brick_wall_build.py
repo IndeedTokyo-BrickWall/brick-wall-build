@@ -11,6 +11,7 @@ from os import path
 import re
 import imp
 import sys
+import dis
 from brick_wall_build import __version__
 
 _CREDIT_LINE = "Powered by brick_wall_build %s - A Lightweight Python Build Tool." % __version__
@@ -90,7 +91,7 @@ def _run_default_task(module):
     default_task = _get_default_task(module)
     if not default_task:
         return False
-    _run(module, _get_logger(module), default_task, set())
+    _run(module, _get_logger(module), default_task, {})
     return True
 
 
@@ -103,7 +104,7 @@ def _run_from_task_names(module,task_names):
     # Create logger.
     logger = _get_logger(module)
     all_tasks = _get_tasks(module)
-    completed_tasks = set([])
+    completed_tasks = {}
     for task_name in task_names:
         task, args, kwargs= _get_task(module, task_name, all_tasks)
         _run(module, logger, task, completed_tasks, True, args, kwargs)
@@ -161,11 +162,14 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
     """
     # Satsify dependencies recursively. Maintain set of completed tasks so each
     # task is only performed once.
+    input_artifacts={}
     for dependency in task.dependencies:
-        completed_tasks = _run(module,logger,dependency,completed_tasks)
+        _run(module,logger,dependency, completed_tasks)
+        input_artifacts[dependency.name] = artifact_file(dependency.name, completed_tasks[dependency.name])
+
 
     # Perform current task, if need to.
-    if from_command_line or task not in completed_tasks:
+    if from_command_line or task.name not in completed_tasks:
 
         if task.ignored:
         
@@ -177,7 +181,9 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
 
             try:
                 # Run task.
-                task(*(args or []),**(kwargs or {}))
+                func=dis.dis(task)
+
+                task(input_artifacts, 'output-file', *(args or []), **(kwargs or {}))
             except:
                 logger.critical("Error in task \"%s\"" % task.name)
                 logger.critical("Aborting build")
@@ -185,9 +191,7 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
             
             logger.info("Completed task \"%s\"" % task.name)
         
-        completed_tasks.add(task)
-    
-    return completed_tasks
+        completed_tasks[task.name] = 'qq'
 
 def _create_parser():
     """
@@ -206,6 +210,11 @@ def _create_parser():
                         metavar = "file", default =  "build.py")
     
     return parser
+
+
+def artifact_file(name, checksum):
+    return name + "-" + checksum
+
         
 # Abbreviate for convenience.
 #task = _TaskDecorator
