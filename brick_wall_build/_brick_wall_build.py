@@ -220,7 +220,7 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
             logger.info(yellow("Starting task \"%s\"" % task.name))
             try:
                 # Run task.
-                cs = checksum(input_artifacts, task.func, task.watched_sources, args, kwargs)
+                cs = checksum(module, input_artifacts, task.func, task.watched_sources, args, kwargs)
                 if cuisine.dir_exists(artifact_file(task.name, cs)):
                     logger.info("Nothing changed")
                 else:
@@ -239,21 +239,35 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
         
         completed_tasks[task.name] = cs
 
-def checksum(input_artifacts, func, watched_sources, args, kwargs):
+def checksum(module, input_artifacts, func, watched_sources, args, kwargs):
     checksums = []
     checksums.append(str(input_artifacts))
     checksums.append(str(args))
     checksums.append(str(kwargs))
-    stdout = sys.stdout
-    sys.stdout = StringIO.StringIO()
-    dis.dis(func)
-    checksums.append(sys.stdout.getvalue())
-    sys.stdout = stdout
+    checksums.append(str(bytecode(module, func, {})))  
     for watched_source in watched_sources:
         cuisine.run("git add -A " + watched_source)
         checksums.append(cuisine.run("git ls-files -s " + watched_source))
     cs = ",".join(checksums)
     return hashlib.sha256(cs).hexdigest()
+
+
+def bytecode(module, func, symbols):
+    if not inspect.isfunction(func):
+        return symbols
+    if func.__name__ in symbols:
+        return symbols
+    stdout = sys.stdout
+    sys.stdout = StringIO.StringIO()
+    dis.dis(func)
+    bc = sys.stdout.getvalue()
+    sys.stdout = stdout
+    symbols[func.__name__] = bc
+    for load_global in re.findall(r'LOAD_GLOBAL\s+\d+ \([^\)]+\)', bc):
+        symb = re.sub('.*\((.*)\).*', '\g<1>', load_global)
+        if hasattr(module, symb):
+            bytecode(module, getattr(module, symb), symbols)
+    return symbols
 
 
 
