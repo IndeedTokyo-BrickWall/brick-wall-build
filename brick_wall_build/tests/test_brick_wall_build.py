@@ -14,8 +14,6 @@ import cuisine
 cuisine.mode_local()
 cuisine.run('rm -rf datasets/*')
 cuisine.dir_ensure('datasets')
-set_tmp_path("/tmp")
-set_artifact_path("./datasets")
 
 
 def fpath(mod):

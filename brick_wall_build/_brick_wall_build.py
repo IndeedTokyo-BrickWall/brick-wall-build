@@ -26,8 +26,8 @@ _TASK_PATTERN = re.compile("^([^\[]+)(\[([^\]]*)\])?$")
 #"^([^\[]+)(\[([^\],=]*(,[^\],=]+)*(,[^\],=]+=[^\],=]+)*)\])?$"
 
 class State:
-    artifact_path = '/tmp'
-    tmp_path = './datasets'
+    artifact_path = './datasets'
+    tmp_path = '/tmp'
 
 def set_artifact_path(path):
     State.artifact_path = path
@@ -49,9 +49,18 @@ def run(*args, **kwargs):
     start = time.clock()
     print(green(cuisine.run(args, kwargs)))
     end = time.clock()
-    print("Elapsed time: " + str(end -start))
+    print("Elapsed time: " + str(end - start))
     print
 
+def artifact_path(artifact, *args):
+    args = list(args or [])
+    if not artifact:
+        raise Exception('No artifact')
+    if artifact == State.output_artifact:
+        return "/".join([tmp_file(artifact)] + args)
+    if artifact in State.input_artifacts:
+        return "/".join([artifact_file(artifact, State.input_artifacts[artifact])] + args)
+    raise Exception('Invalid artifact: ' + artifact)
 
 def build(args):
     """
