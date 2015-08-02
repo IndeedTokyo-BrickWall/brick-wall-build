@@ -4,36 +4,36 @@ from brick_wall_build import task
 
 
 @task()
-def clean(input_artifacts, output_artifact):
+def clean():
     """Clean build directory."""
 
     print("clean")
 
 @task()
-def html(input_artifacts, output_artifact):
+def html():
     """Generate HTML."""
     
     print("html")
 
 @task()
-def images(input_artifacts, output_artifact):
+def images():
     """Prepare images."""
 
     print("images")
 
 @task()
-def android(input_artifacts, output_artifact):
+def android():
     """Package Android app."""
 
     print("android")
 
 @task()
-def ios(input_artifacts, output_artifact):
+def ios():
     """Package iOS app."""
 
     print("ios")
     
-def some_utility_method(input_artifacts, output_artifact):
+def some_utility_method():
     """Some utility method."""
 
     print("some utility method")

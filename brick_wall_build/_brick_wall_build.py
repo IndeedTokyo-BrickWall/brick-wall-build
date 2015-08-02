@@ -25,26 +25,24 @@ _LOGGING_FORMAT = "%(asctime)s - %(message)s "
 _TASK_PATTERN = re.compile("^([^\[]+)(\[([^\]]*)\])?$")
 #"^([^\[]+)(\[([^\],=]*(,[^\],=]+)*(,[^\],=]+=[^\],=]+)*)\])?$"
 
+class State:
+    artifact_path = '/tmp'
+    tmp_path = './datasets'
+
 def set_artifact_path(path):
-    fabric.api.env['artifact_path'] = path
+    State.artifact_path = path
 
 def set_tmp_path(path):
-    fabric.api.env['tmp_path'] = path
-
-def artifact_path():
-    return fabric.api.env['artifact_path']
-
-def tmp_path():
-    return fabric.api.env['tmp_path']
+    State.tmp_path = path
 
 def artifact_dir(name):
-    return artifact_path() + "/" + name
+    return State.artifact_path + "/" + name
 
 def tmp_file(name):
-    return tmp_path() + "/" +  name
+    return State.tmp_path + "/" +  name
 
 def artifact_file(name, cs):
-    return artifact_path() + "/" + name + "/" + cs
+    return State.artifact_path + "/" + name + "/" + cs
 
 def run(*args, **kwargs):
     print("Running command: " + blue(str(args[0])))
@@ -83,11 +81,9 @@ def build(args):
         parser.print_help()
         sys.exit(1)
 
-    set_tmp_path("/tmp")
-    set_artifact_path("./datasets")
     module = imp.load_source(path.splitext(path.basename(args.file))[0], args.file)
-    cuisine.dir_ensure(tmp_path())
-    cuisine.dir_ensure(artifact_path())
+    cuisine.dir_ensure(State.tmp_path)
+    cuisine.dir_ensure(State.artifact_path)
     # Run task and all its dependencies.
     if args.list_tasks:
         print_tasks(module, args.file)
@@ -228,7 +224,10 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
                     cuisine.dir_ensure(artifact_dir(task.name))
                     cuisine.dir_remove(tmp_file(task.name))
                     cuisine.dir_ensure(tmp_file(task.name))
-                    task(input_artifacts, tmp_file(task.name), *(args or []), **(kwargs or {}))
+                    State.input_artifacts = input_artifacts
+                    State.output_artifact = task.name
+
+                    task(*(args or []), **(kwargs or {}))
                     cuisine.run("mv " + tmp_file(task.name) + " " + artifact_file(task.name, cs))
             except:
                 logger.critical("Error in task \"%s\"" % task.name)

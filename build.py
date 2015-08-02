@@ -17,21 +17,12 @@ def other_function2(param):
 	print "other_function2 " + param
 
 @task(watched_sources = ['brick_wall_build', 'LICENSE.txt'])
-def test1(input_artifacts, output_artifact):
+def test1():
     run("echo test")
 
 
 
 @task(test1, watched_sources = ['README.md'])
-def test2(input_artifacts, output_artifact, param=''):
+def test2(param=''):
     run("echo test2 param=" + param)
     other_function()
-
-
-@task()
-def test(input_artifacts, output_artifact, *args):
-    """
-    Run unit tests.
-    """
-    run("py.test-2.7")
-
