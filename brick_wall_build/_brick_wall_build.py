@@ -270,6 +270,11 @@ def bytecode(module, func, symbols):
     dis.dis(func)
     bc = sys.stdout.getvalue()
     sys.stdout = stdout
+    bc = re.sub(r'\n\s*[0-9]*\s+[0-9]+\s+', '\n', '\n' + bc)
+    bc = re.sub(r'\n\s*>>\s+[0-9]*\s+[0-9]+\s+', '\n', '\n' + bc)
+    bc = re.sub(r'\s+[0-9]+\s+\(', '\t(', bc)
+    bc = re.sub(r'\s+[0-9]+\n', '\n', bc)
+    bc = re.sub(r'\(to [0-9]+\)', '', bc)
     symbols[func.__name__] = bc
     for load_global in re.findall(r'LOAD_GLOBAL\s+\d+ \([^\)]+\)', bc):
         symb = re.sub('.*\((.*)\).*', '\g<1>', load_global)
