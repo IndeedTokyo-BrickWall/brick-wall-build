@@ -20,13 +20,17 @@ def other_function():
 def other_function2(param):
 	print "other_function2 " + param
 
+
 @task(watched_sources = ['brick_wall_build', 'LICENSE.txt'])
 def test1():
     run("echo test")
 
-
+@task(test1)
+def test3():
+    run("echo test3")
 
 @task(test1, watched_sources = ['README.md'])
 def test2(param=''):
     run("echo test2 param=" + param)
     other_function()
+
