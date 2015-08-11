@@ -59,7 +59,7 @@ def artifact_path(artifact, *args):
     if artifact == State.output_artifact:
         return "/".join([tmp_file(artifact)] + args)
     if artifact in State.input_artifacts:
-        return "/".join([artifact_file(artifact, State.input_artifacts[artifact])] + args)
+        return "/".join([State.input_artifacts[artifact]] + args)
     raise Exception('Invalid artifact: ' + artifact)
 
 def build(args):
@@ -235,7 +235,7 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
                     cuisine.dir_ensure(tmp_file(task.name))
                     State.input_artifacts = input_artifacts
                     State.output_artifact = task.name
-
+                    logger.info("Going to write an artifact with checksum " + cs)
                     task(*(args or []), **(kwargs or {}))
                     cuisine.run("mv " + tmp_file(task.name) + " " + artifact_file(task.name, cs))
             except:
