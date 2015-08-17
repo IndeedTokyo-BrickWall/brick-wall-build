@@ -250,8 +250,8 @@ def _run(module, logger, task, completed_tasks, from_command_line = False, args 
 def checksum(module, input_artifacts, func, watched_sources, args, kwargs):
     checksums = []
     checksums.append(str(input_artifacts))
-    checksums.append(str(args))
-    checksums.append(str(kwargs))
+    checksums.append(str(args if args else None))
+    checksums.append(str(kwargs if kwargs else None))
     checksums.append(str(bytecode(module, func, {})))  
     for watched_source in watched_sources:
         cuisine.run("git add -A " + watched_source)
